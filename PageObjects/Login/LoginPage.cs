@@ -1,8 +1,7 @@
 ﻿using System.Threading;
 using OpenQA.Selenium;
-using OpenQA.Selenium.DevTools;
 
-namespace Sia12
+namespace Sia12.PageObjects.Login
 {
     public class LoginPage
     {
