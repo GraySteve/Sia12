@@ -1,22 +1,25 @@
-﻿using OpenQA.Selenium;
-using Sia12.PageObjects.AdressesOverview;
+﻿using System.Threading;
+using OpenQA.Selenium;
+using Sia12.PageObjects.AddressesOverview;
 
 namespace Sia12.PageObjects.Home
 {
     public class HomePage
     {
-        private IWebDriver driver;
+        private IWebDriver _driver;
 
         public HomePage(IWebDriver browser)
         {
-            driver = browser;
+            _driver = browser;
         }
 
-        public IWebElement BtnAddressesOverview => driver.FindElement(By.CssSelector("a[data-test='addresses']"));
+        private IWebElement BtnAddressesOverview => _driver.FindElement(By.CssSelector("a[data-test='addresses']"));
 
         public AddressesOverviewPage NavigateToAddressesOverview()
         {
-            return new AddressesOverviewPage(driver);
+            BtnAddressesOverview.Click();
+            Thread.Sleep(1000);
+            return new AddressesOverviewPage(_driver);
         }
     }
 }
