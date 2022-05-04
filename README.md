@@ -407,3 +407,153 @@ At this point, we need to update our tests:
 ```
 
 We still have work to do. But chill out and see you at the next seminar.
+### **Session 4: Let's write an UI automation tests for adding a new address**
+
+**Scope:** This session scope was to create a unit test project for adding addresses and to keep the code clean
+
+In order to add a new address, we will need a write code for the next steps:
+1.	Open the browser
+2.	Maximize the page
+3.	Open the application URL
+4.	Click Sign in button (NavigateToLoginPage method)
+5.	Fill user email and password, then click Sign in button (LoginApplication method)
+6.	Navigate to addresses page
+7.	Navigate to add address page
+8.	Complete the form with mandatory fields and click Save button
+9.	Assert that the success message is shown
+
+
+At step 5, use login actions (fill user email and password, click Sign in button) that is in LoginPage.cs:
+
+```csharp
+    public void LoginApplication(string username, string password)
+    {
+        TxtUsername.SendKeys(username);
+        TxtPassword.SendKeys(password);
+        BtnLogin.Click();
+    }
+```
+
+In order to navigate to addresses page, we need to create a page object HomePage.cs that contains elements and method for this page:
+
+```csharp
+    public class HomePage
+    {
+        private IWebDriver driver;
+
+        public HomePage(IWebDriver browser)
+        {
+            driver = browser;
+        }
+
+
+
+        private By addresses = By.CssSelector("[data-test=addresses]");
+        private IWebElement BtnAddresses => driver.FindElement(addresses);
+
+        public AddressesPage NavigateToAddressesPage()
+        {
+            BtnAddresses.Click();
+            return new AddressesPage(driver);
+        }
+
+    }
+```
+
+Next step is to navigate to add address page. For this, we need another page object AddressesPage.cs which contains New Address button declaration and method to clicks on the element:
+
+```csharp
+    public class AddressesPage
+    {
+        private IWebDriver driver;
+
+        public AddressesPage(IWebDriver browser)
+        {
+            driver = browser;
+        }
+
+        private By newAddress = By.XPath("//a[@data-test='create']");
+        private IWebElement BtnNewAddress => driver.FindElement(newAddress);
+
+        public AddAddressPage NavigateToAddAddressPage()
+        {
+            BtnNewAddress.Click();
+            return new AddAddressPage(driver);
+        }
+    }
+```
+
+For step 8 (Complete the form with mandatory fields and click Save button), we will create a page object that contains the elements for the add address page: AddAdressPage.cs.
+We need to add the objects that we use in our script in this class: first name, last name, address, city, zip code, birthday and color inputs, state dropdown, country select, save button and create a method to add the address.
+Our add address page will look like this:
+
+```csharp
+    public class AddAdressPage
+    {
+        private IWebDriver driver;
+
+        public AddAdressPage(IWebDriver browser)
+        {
+            driver = browser;
+        }
+
+        private IWebElement TxtFirstName => driver.FindElement(By.Id("address_first_name"));
+
+        private IWebElement TxtLastName => driver.FindElement(By.Id("address_last_name"));
+
+        private IWebElement TxtAddress1 => driver.FindElement(By.Id("address_street_address"));
+
+        private IWebElement TxtCity => driver.FindElement(By.Id("address_city"));
+
+        private IWebElement DdlState => driver.FindElement(By.Id("address_state"));
+
+        private IWebElement TxtZipCode => driver.FindElement(By.Id("address_zip_code"));
+
+        private IList<IWebElement> LstCountry => driver.FindElements(By.CssSelector("input[type=radio]"));
+
+        private IWebElement TxtBirthday => driver.FindElement(By.Id("address_birthday"));
+
+        private IWebElement ClColor => driver.FindElement(By.Id("address_color"));
+
+        private IWebElement BtnSave => driver.FindElement(By.Name("commit"));
+
+        public void AddAddress()
+        {
+            TxtFirstName.SendKeys("test");
+            TxtLastName.SendKeys("test");
+            TxtAddress1.SendKeys("test");
+            TxtCity.SendKeys("test");
+            var selectState = new SelectElement(DdlState);
+            selectState.SelectByText("Hawaii");
+            TxtZipCode.SendKeys("test");
+            LstCountry[1].Click();
+
+            var js = (IJavaScriptExecutor) driver;
+            js.ExecuteScript("arguments[0].setAttribute('value', arguments[1])", ClColor, "#FF0000");
+            BtnSave.Click();
+            Thread.Sleep(2000);
+        }
+     }
+```
+Find Elements command takes in By object as the parameter and returns a list of web elements. It returns an empty list if there are no elements found using the given locator strategy and locator value. Below is the syntax of find elements command.
+	private IList<IWebElement> LstCountry => driver.FindElements(By.CssSelector("input[type=radio]"));
+	
+The 'Select' class in Selenium WebDriver is used for selecting and deselecting option in a dropdown. The objects of Select type can be initialized by passing the dropdown webElement as parameter to its constructor.
+	var selectState = new SelectElement(DdlState);
+    selectState.SelectByText("Hawaii");
+
+JavaScriptExecutor is an Interface that helps to execute JavaScript through Selenium Webdriver.
+
+Syntax:
+
+	var js = (IJavaScriptExecutor) driver; 
+	js.ExecuteScript(Script,Arguments);
+
+Script – This is the JavaScript that needs to execute.
+
+Arguments – It is the arguments to the script. It's optional.
+
+	var js = (IJavaScriptExecutor) driver;
+    js.ExecuteScript("arguments[0].setAttribute('value', arguments[1])", ClColor, "#FF0000");
+
+In order to finish the automated tests, we need to make an assertion.
