@@ -1,4 +1,8 @@
-﻿using OpenQA.Selenium;
+﻿using System.Collections.Generic;
+using System.Linq;
+using OpenQA.Selenium;
+using OpenQA.Selenium.Support.UI;
+using Sia12.PageObjects.AddressesOverview.Address.InputData;
 
 namespace Sia12.PageObjects.AddressesOverview.Address
 {
@@ -21,13 +25,26 @@ namespace Sia12.PageObjects.AddressesOverview.Address
 
         public IWebElement BtnCreate => driver.FindElement(By.CssSelector("input[data-test='submit']"));
 
-        public void CreateAddress(string firstName, string lastName, string address1, string city, string zipcode)
+        public IWebElement DdlState => driver.FindElement(By.Id("address_state"));
+        public IList<IWebElement> LstCountry => driver.FindElements(By.XPath("//label[contains(@for,'address_country')]"));
+
+        public IWebElement TxtColor => driver.FindElement(By.Id("address_color"));
+
+        public void CreateAddress(AddressBo address)
         {
-            TxtFirstName.SendKeys(firstName);
-            TxtLastName.SendKeys(lastName);
-            TxtAddress1.SendKeys(address1);
-            TxtCity.SendKeys(city);
-            TxtZipCode.SendKeys(zipcode);
+            TxtFirstName.SendKeys(address.FirstName);
+            TxtLastName.SendKeys(address.LastName);
+            TxtAddress1.SendKeys(address.Address1);
+            TxtCity.SendKeys(address.City);
+            TxtZipCode.SendKeys(address.Zipcode);
+            
+            var selectElem = new SelectElement(DdlState);
+            selectElem.SelectByText(address.State);
+
+            LstCountry.First(el => el.Text.Contains(address.Country)).Click();
+
+            var jsEx = (IJavaScriptExecutor)driver;
+            jsEx.ExecuteScript("arguments[0].setAttribute('value', arguments[1])", TxtColor, address.Color);
 
             BtnCreate.Click();
         }

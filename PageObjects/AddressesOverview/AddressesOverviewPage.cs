@@ -14,12 +14,18 @@ namespace Sia12.PageObjects.AddressesOverview
         }
 
         private IWebElement BtnCreateAddress => driver.FindElement(By.XPath("//a[@data-test='create']"));
-
+        private IWebElement TblAddresses => driver.FindElement(By.XPath("//table[@class='table']//tbody"));
         public AddAddressPage NavigateToAddAddress()
         {
             BtnCreateAddress.Click();
             Thread.Sleep(1000);
             return new AddAddressPage(driver);
+        }
+
+        public EditAddressPage NavigateToEditAddress()
+        {
+
+            return new EditAddressPage(driver);
         }
     }
 }

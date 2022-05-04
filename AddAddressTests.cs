@@ -3,6 +3,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using Sia12.PageObjects.AddressesOverview.Address;
+using Sia12.PageObjects.AddressesOverview.Address.InputData;
 using Sia12.PageObjects.Home;
 using Sia12.PageObjects.Login;
 
@@ -13,6 +14,19 @@ namespace Sia12
     {
         private IWebDriver _driver;
         private AddAddressPage _addPage;
+
+        private AddressBo _inputAddress = new AddressBo()
+        {
+            FirstName = "First Test",
+            LastName = "Last Test",
+            Address1 = "Address1 test",
+            City = "New York",
+            State = "Texas",
+            Country = "United",
+            Color = "#FF0000",
+            Zipcode = "Test Zip"
+        };
+
         [TestInitialize]
         public void StartUp()
         {
@@ -40,7 +54,7 @@ namespace Sia12
         [TestMethod]
         public void AddAddressSuccessfully()
         {
-            _addPage.CreateAddress("test", "Testovici", "Strada Test", "Test", "test");
+            _addPage.CreateAddress(_inputAddress);
 
         }
 
