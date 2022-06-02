@@ -407,6 +407,7 @@ At this point, we need to update our tests:
 ```
 
 We still have work to do. But chill out and see you at the next seminar.
+
 ### **Session 4: Let's write an UI automation tests for adding a new address**
 
 **Scope:** This session scope was to create a unit test project for adding addresses and to keep the code clean
@@ -557,3 +558,519 @@ Arguments – It is the arguments to the script. It's optional.
     js.ExecuteScript("arguments[0].setAttribute('value', arguments[1])", ClColor, "#FF0000");
 
 In order to finish the automated tests, we need to make an assertion.
+
+### **Session 5: Let’s continue to refactor our project**
+
+**Scope:** This session scope was to finish the test, refactor our code and replace Thread.Sleep with efficient waits. 
+
+For this test, will be the success message shown in the address details page, after saving it. Another page object will be created: AddressDetailsPage.cs
+
+```csharp
+    public class AddressDetailsPage
+    {
+        private IWebDriver driver;
+
+        public AddressDetailsPage(IWebDriver browser)
+        {
+            driver = browser;
+        }
+
+        public IWebElement LblSuccess => driver.FindElement(By.CssSelector("[data-test='notice']"));
+    }
+```
+
+At this point, our automated tests will look like this:
+
+```csharp
+    [TestClass]
+    public class AddAddressTests
+    {
+        private IWebDriver driver;
+        private AddAdressPage addAddressPage;
+
+        [TestInitialize]
+        public void Setup()
+        {
+            driver = new ChromeDriver();
+            var loginPage = new LoginPage(driver);
+            driver.Manage().Window.Maximize();
+            driver.Navigate().GoToUrl("http://a.testaddressbook.com/");
+            loginPage.NavigateToLoginPage();
+            Thread.Sleep(1000);
+            loginPage.LoginApplication("test@test.test", "test");
+
+            var homePage = new HomePage(driver);
+            Thread.Sleep(1000);
+            var addressesPage = homePage.NavigateToAddressesPage();
+            Thread.Sleep(1000);
+            addAddressPage = addressesPage.NavigateToAddAddressPage();
+            Thread.Sleep(1000);
+        }
+
+        [TestMethod]
+        public void Go_To_AddAddressPage()
+        {
+            addAddressPage.AddAddress();
+            var addressDetails = new AddressDetailsPage(driver);
+            var message = "Address was successfully created.";
+            Assert.AreEqual(message, addressDetails.LblSuccess.Text);
+        }
+
+
+        [TestCleanup]
+        public void CleanUp()
+        {
+            driver.Quit();
+        }
+    }
+```
+
+
+Another thing we need to change is the way we navigate from adding address page to address details page. For this, since after saving the address, we navigate to the AddressDetails page,
+we need to change the CreateAddress method to return AddressDetails class:
+
+```csharp
+        public AddresssDetailsPage CreateAddress(AddAddressBO addAddressB)
+        {
+            TxtFirstName.SendKeys("test");
+            TxtLastName.SendKeys("test");
+            TxtAddress1.SendKeys("test");
+            ...
+        }
+```
+
+Then, called it in the AddAddressTests.cs:
+
+```csharp
+            var addressDetailsPage = addAddressPage.CreateAddress(s);
+```
+
+To parametrize AddAddress method in an efficient way, we can create a business object class called AddAddressBO.cs which will contain the objects needed in the process of adding an address: 
+
+```csharp
+    public class AddAddressBO
+    {
+        public string TxtFirstName = "test";
+        public string TxtLastName = "test";
+        public string TxtAddress1 = "test";
+        public string TxtCity = "test";
+        public string TxtState = "Hawaii";
+        public string TxtZipCode = "test";
+        public string TxtBirthdayDay = "05";
+        public string TxtBirthdayMonth = "03";
+        public string TxtBirthdayYear = "2000";
+        public string TxtColor = "#FF0000";
+    }
+```
+
+Then, use it in the AddAddress method as a parameter and to access his properties:
+
+```csharp
+        public void AddAddress(AddAddressBO address)
+        {
+            TxtFirstName.SendKeys(address.TxtFirstName);
+            TxtLastName.SendKeys(address.TxtLastName);
+              ... and so on
+        }
+```
+
+Now, we can move on to the **Wait Strategy** and how to use it.
+
+There are explicit and implicit waits in Selenium Web Driver. Waiting is having the automated task execution elapse a certain amount of time before continuing with the next step. 
+
+You should choose to use Explicit or Implicit Waits.
+
+**•	Thread.Sleep**
+
+In particular, this pattern of sleep is an example of explicit waits. So this isn’t actually a feature of Selenium WebDriver, it’s a common feature in most programming languages though.
+
+Thread.Sleep() does exactly what you think it does, it sleeps the thread.
+
+Example:
+
+```csharp
+            Thread.Sleep(2000);
+```
+
+Warning! Using Thread.Sleep() can leave to random failures (server is sometimes slow), you don't have full control of the test and the test could take longer than it should. It is a good practice to use other types of waits.
+
+**•	Implicit Wait**
+
+WebDriver will poll the DOM for a certain amount of time when trying to find an element or elements if they are not immediately available
+
+Example:
+
+```csharp
+            driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(1);
+```
+
+**•	Explicit Wait** - Wait for a certain condition to occur before proceeding further in the code
+
+In practice, we recommend that you use Web Driver Wait in combination with methods of the Expected Conditions class that reduce the wait. If the element appeared earlier than the time specified during Web Driver wait initialization, Selenium will not wait but will continue the test execution.
+
+Example 1:
+
+```csharp
+            var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(2));
+            wait.Until(ExpectedConditions.ElementIsVisible(firstName));
+```
+
+Example 2:
+
+```csharp
+        public AddAdressPage(IWebDriver browser)
+        {
+            driver = browser;
+            var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(2));
+            wait.Until(ExpectedConditions.ElementIsVisible(firstName));
+        }
+
+        private By firstName = By.Id("address_first_name");
+        private IWebElement TxtFirstName => driver.FindElement(firstName);
+```		
+
+		
+### **Session 6**
+**Scope:** This session scope is to handle grids and menu in our automation script
+At this point, we have added an address, but the application has also implemented the delete functionality. This can be done in the Addresses page.
+Within this page we have a grid that contains a list of addresses(table row > tr) and each address contains it's details(table data > td) and the posibility to view/edit/delete it.
+After clicking delete button, an alert appears. Selenium Webdriver manipulate(accept/dismiss/get text) the alert and accept it in our case:
+
+```csharp
+		driver.SwitchTo().Alert().Accept();
+```
+
+Selenium Webdriver gives us the posibility to chain elements and create a structure father child:
+```csharp
+		driver.FindElement("father").FindElement(By.CssSelector("child")).FindElement(By.CssSelector("grandchild"));
+```
+
+We need to iterate the list to identify the address that we have added and to delete it. There are multiple ways to do it, but the preferred one is documented below: 
+```csharp
+		private By addresses = By.CssSelector("tbody tr");
+        private IList<IWebElement> LstAddresses => driver.FindElements(addresses);
+		
+		private  By delete = By.CssSelector("[data-method='delete']");
+        private IWebElement BtnDeleteV2 => LstAddresses.FirstOrDefault(element => element.Text.Contains("**hotel name**"))?
+                                                        .FindElement(delete);
+														
+		public void DeleteAddress()
+        {
+            BtnDeleteV2.Click();
+            driver.SwitchTo().Alert().Accept();
+        }
+```
+
+The other ones would be:
+```csharp
+		private  By delete = By.CssSelector("[data-method='delete']");
+		//**not a good idea because it would always take the first from the list
+        private IWebElement BtnDelete => LstAddresses[0].FindElement(delete);
+
+
+		public void DeleteAddressV1()
+        {
+            BtnDelete.Click();
+            driver.SwitchTo().Alert().Accept();
+        }
+		
+        public void DeleteAddressV2(AddAddressBO addAddressBo)
+        {
+            foreach (var address in LstAddresses)
+            {
+                if (address.Text.Contains(addAddressBo.TxtFirstName))
+                {
+                    address.FindElement(delete).Click();
+                    driver.SwitchTo().Alert().Accept();
+                    break;
+                }
+            }
+        }    
+```
+
+
+And the methods could be called in test classes:
+```csharp
+
+		[TestClass]
+	    public class AddressesTest
+	    {
+	        private IWebDriver driver;
+	        private AddressesPage addressesPage;
+	
+	        [TestInitialize]
+	        public void SetUp()
+	        {
+	            driver = new ChromeDriver();
+	            
+	            driver.Manage().Window.Maximize();
+	            driver.Navigate().GoToUrl("http://a.testaddressbook.com/");
+	            var loginPage = new LoginPage(driver);
+	            loginPage.menuItemControl.NavigateToLoginPage();
+	            loginPage.LoginApplication("test@test.test", "test");
+	
+	            var homePage = new HomePage(driver);
+	            //Implicit Wait
+	            //driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(1);
+	
+	            addressesPage = homePage.NavigateToAddressesPage();
+	            var addAddressPage = addressesPage.NavigateToAddAddressPage();
+	            addAddressPage.AddAddress(new AddAddressBO());
+	            var addressDetails =  addAddressPage.NavigateToAddressDetailsPage();
+	            addressesPage = addressDetails.NavigateToAddressesPage();
+	        }
+	
+	        [TestMethod]
+	        public void Should_Delete_Address_V1()
+	        {
+	            addressesPage.DeleteAddress1();
+	            string notice = "Address was successfully destroyed.";
+	            Assert.AreEqual(notice, addressesPage.NoticeText);
+	        }
+	
+	        [TestMethod]
+	        public void Should_Delete_Address_V2()
+	        {
+	            addressesPage.DeleteAddressV2(new AddAddressBO());
+	            string notice = "Address was successfully destroyed.";
+	            Assert.AreEqual(notice, addressesPage.NoticeText);
+	        }
+	
+	        [TestMethod]
+	        public void Should_Delete_Address_V3()
+	        {
+	            addressesPage.DeleteAddressV3();
+	            string notice = "Address was successfully destroyed.";
+	            Assert.AreEqual(notice, addressesPage.NoticeText);
+	        }
+	
+	        [TestCleanup]
+	        public void CleanUp()
+	        {
+	            driver.Quit();
+	        }
+			
+```
+
+Now let's handle the menu.
+The menu is present in all the app pages and we need to create a single repository where the menu elements can be stored.
+This is a shared component and we need to call it in all of our page objects.
+The first step is to create a class named MenuItemControl. This class will containt all menu elements.
+
+```csharp
+
+		public class MenuItemControl
+	    {
+	        public IWebDriver driver;
+			
+			public MenuItemControl(IWebDriver browser)
+	        {
+	            driver = browser;
+	        }
+			
+			private By home = By.CssSelector("");
+	        private IWebElement BtnHome => driver.FindElement(home);
+	    
+	        private By signIn = By.Id("sign-in");
+	        private IWebElement BtnSignIn => driver.FindElement(signIn);
+	
+	
+	        private By addresses = By.CssSelector("");
+	        private IWebElement BtnAddresses => driver.FindElement(addresses);
+	
+	        private By signOut = By.CssSelector("");
+	        private IWebElement BtnSignOut => driver.FindElement(signOut);
+	
+	        private By useremail = By.CssSelector("span[data-test='current-user']");
+	        private IWebElement LblUserEmail=>driver.FindElement(useremail);
+		}
+		
+```
+
+The application has 2 contexts, but this menu cannot be used from both perspectives: logged out and logged in.
+Let's identify the elements used in this contexts:
+			- logged out: Home, Sign in
+			- logged in: Home, Addresses, Sign out and User email
+The common webelement for both contextes is Home.
+Now that we have identified what we have, we need to create 2 classes for out contextes: LoggedOutMenuItemControl and LoggedInMenuItemControl that will inhirit the MenuItemControlClass.
+And we need to move the elements to the according classes. We also need to move the navigation logic to this classes.
+
+```csharp
+
+		public class MenuItemControl
+	    {
+	        public IWebDriver driver;
+	
+	        public MenuItemControl(IWebDriver browser)
+	        {
+	            driver = browser;
+	        }
+	
+	        private By home = By.CssSelector("");
+	        private IWebElement BtnHome => driver.FindElement(home);
+	    }
+		
+```
+
+```csharp
+
+		public class LoggedOutMenuItemControl: MenuItemControl
+	    {
+	
+	        private By signIn = By.Id("sign-in");
+	        private IWebElement BtnSignIn => driver.FindElement(signIn);
+	
+	        public LoggedOutMenuItemControl(IWebDriver browser) : base(browser)
+	        {
+	        }
+	
+	        public LoginPage NavigateToLoginPage()
+	        {
+	            BtnSignIn.Click();
+	            return new LoginPage(driver);
+	        }
+	    }
+		
+```
+
+```csharp
+
+		public class LoggedInMenuItemControl: MenuItemControl
+	    {
+	        private By addresses = By.CssSelector("");
+	        private IWebElement BtnAddresses => driver.FindElement(addresses);
+	
+	        private By signOut = By.CssSelector("");
+	        private IWebElement BtnSignOut => driver.FindElement(signOut);
+	
+	        private By useremail = By.CssSelector("span[data-test='current-user']");
+	        private IWebElement LblUserEmail=>driver.FindElement(useremail);
+	
+	        public LoggedInMenuItemControl(IWebDriver browser) : base(browser)
+	        {
+	        }
+	
+	        public string UserEmailText => LblUserEmail.Text;
+	    }
+		
+```
+
+Let's used in the LoginPage.cs and LoginTests.cs
+
+```csharp
+
+		 public class LoginPage
+	     {
+	        private IWebDriver driver;
+			
+			//**reference the menu item control**
+	        public LoggedOutMenuItemControl menuItemControl => new LoggedOutMenuItemControl(driver);
+	
+	        public LoginPage(IWebDriver browser)
+	        {
+	            driver = browser;
+	        }        
+	
+	        private By email = By.Id("session_email");
+	        private IWebElement TxtUsername()
+	        {
+	            return driver.FindElement(email);
+	        }
+	
+	        private IWebElement TxtPassword()
+	        {
+	            return driver.FindElement(By.Id("session_password"));
+	        }
+	
+	        private IWebElement BtnLogin()
+	        {
+	            return driver.FindElement(By.Name("commit"));
+	        }
+	        
+	        public void LoginApplication(string username, string password)
+	        {
+	            var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(2));
+	            wait.Until(ExpectedConditions.ElementExists(email));
+	            TxtUsername().SendKeys(username);
+	            TxtPassword().SendKeys(password);
+	            BtnLogin().Click();
+	        }
+	    }
+		
+```
+
+```csharp
+
+		[TestClass]
+	    public class LoginTests
+	    {
+	        private IWebDriver driver;
+	        private LoginPage loginPage;
+	
+	
+	        [TestInitialize]
+	        public void SetUp()
+	        {
+	            driver = new ChromeDriver();
+	            loginPage = new LoginPage(driver);
+	            driver.Manage().Window.Maximize();
+	            driver.Navigate().GoToUrl("http://a.testaddressbook.com/");
+				//**use in the test**
+	            loginPage.menuItemControl.NavigateToLoginPage();
+	        }
+	
+	        [TestMethod]
+	        public void Login_CorrectEmail_CorrectPassword()
+	        {
+	            loginPage.LoginApplication("test@test.test", "test");
+	
+	            var expectedResult = "test@test.test";
+	            var homePage = new HomePage(driver);
+	
+	            Assert.AreEqual(expectedResult, homePage.menuItemControl.UserEmailText);
+	        }
+	
+	        [TestMethod]
+	        public void Login_IncorrectEmail_IncorrectPassword()
+	        {
+	            loginPage.LoginApplication("weor@hdsh.asdhg", "asd");
+	
+	            var expectedResult = "Bad email or password.";
+	            var actualResults = driver.FindElement(By.XPath("//div[starts-with(@class, 'alert')]")).Text;
+	
+	            Assert.AreEqual(expectedResult, actualResults);
+	        }
+	
+	        [TestCleanup]
+	        public void CleanUp()
+	        {
+	            driver.Quit();
+	        }
+	    }
+		
+```
+
+As said before, this can be put in every class, depending on the context.
+
+
+### **References**
+Getting started: 
+- https://www.automatetheplanet.com/getting-started-webdriver/ 
+- official documentation: https://www.selenium.dev/documentation/en/
+
+Page object model 
+- https://www.selenium.dev/documentation/en/guidelines_and_recommendations/page_object_models/ 
+- https://www.automatetheplanet.com/page-object-pattern/ 
+- https://huddle.eurostarsoftwaretesting.com/selenium-page-objects-page-object-model/ 
+- https://testautomationu.applitools.com/test-automation-framework-csharp/chapter3.html
+
+Waits: 
+- https://www.toolsqa.com/selenium-webdriver/c-sharp/advance-explicit-webdriver-waits-in-c/ 
+- https://www.lambdatest.com/blog/explicit-fluent-wait-in-selenium-c/ 
+- https://dzone.com/articles/selenium-c-tutorial-using-explicit-and-fluent-wait 
+- https://alexsiminiuc.medium.com/c-expected-conditions-are-deprecated-so-what-b451365adc24 
+- https://testautomationu.applitools.com/test-automation-framework-csharp/chapter12.html
+
+Others: 
+- Select dropdown - https://www.toolsqa.com/selenium-webdriver/c-sharp/dropdown-multiple-select-operations-in-c/ 
+- Javascript executor - https://www.c-sharpcorner.com/article/execution-of-selenium-web-driver-using-c-sharp-javascript/
