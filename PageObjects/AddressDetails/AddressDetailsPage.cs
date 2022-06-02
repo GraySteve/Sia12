@@ -1,4 +1,5 @@
 ﻿using OpenQA.Selenium;
+using Sia12.Utils;
 
 namespace Sia12.PageObjects.AddressDetails
 {
@@ -11,10 +12,18 @@ namespace Sia12.PageObjects.AddressDetails
             _driver = driver;
         }
 
+        private By Notice => By.CssSelector("div[data-test=notice]");
         private IWebElement LblNotice =>
-            _driver.FindElement(By.CssSelector("div[data-test=notice]"));
+            _driver.FindElement(Notice);
 
 
-        public string NoticeText => LblNotice.Text;
+        public string NoticeText
+        {
+            get
+            {
+                _driver.WaitForElement(Notice);
+                return LblNotice.Text;
+            }
+        }
     }
 }

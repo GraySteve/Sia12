@@ -1,6 +1,7 @@
 ﻿using System.Threading;
 using OpenQA.Selenium;
 using Sia12.PageObjects.AddressesOverview;
+using Sia12.Shared.Controls.MenuItemControl;
 
 namespace Sia12.PageObjects.Home
 {
@@ -13,13 +14,7 @@ namespace Sia12.PageObjects.Home
             _driver = browser;
         }
 
-        private IWebElement BtnAddressesOverview => _driver.FindElement(By.CssSelector("a[data-test='addresses']"));
 
-        public AddressesOverviewPage NavigateToAddressesOverview()
-        {
-            BtnAddressesOverview.Click();
-            Thread.Sleep(1000);
-            return new AddressesOverviewPage(_driver);
-        }
+        public LoggedInMenuItemControlCommon Menu => new LoggedInMenuItemControlCommon(_driver);
     }
 }

@@ -4,6 +4,7 @@ using OpenQA.Selenium;
 using OpenQA.Selenium.Support.UI;
 using Sia12.PageObjects.AddressDetails;
 using Sia12.PageObjects.AddressesOverview.Address.InputData;
+using Sia12.Utils;
 
 namespace Sia12.PageObjects.AddressesOverview.Address
 {
@@ -16,7 +17,8 @@ namespace Sia12.PageObjects.AddressesOverview.Address
             driver = browser;
         }
 
-        public IWebElement TxtFirstName => driver.FindElement(By.Id("address_first_name"));
+        private By FirstName => By.Id("address_first_name");
+        private IWebElement TxtFirstName => driver.FindElement(FirstName);
 
         public IWebElement TxtLastName => driver.FindElement(By.XPath("//input[@name='address[last_name]']"));
 
@@ -33,6 +35,7 @@ namespace Sia12.PageObjects.AddressesOverview.Address
 
         public AddressDetailsPage CreateEditAddress(AddressBo address)
         {
+            driver.WaitForElement(FirstName,40);
             TxtFirstName.Clear();
             TxtFirstName.SendKeys(address.FirstName);
             TxtLastName.Clear();

@@ -1,12 +1,10 @@
-﻿using System.Threading;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using Sia12.PageObjects.AddressesOverview;
 using Sia12.PageObjects.AddressesOverview.Address;
 using Sia12.PageObjects.AddressesOverview.Address.InputData;
-using Sia12.PageObjects.Home;
-using Sia12.PageObjects.Login;
+using Sia12.Shared.Controls.MenuItemControl;
 
 namespace Sia12
 {
@@ -19,7 +17,7 @@ namespace Sia12
 
         private AddressBo _inputAddress = new AddressBo()
         {
-            FirstName = "First Test",
+            FirstName = "Pretty please don't edit/delete up",
             LastName = "Last Test",
             Address1 = "Address1 test",
             City = "New York",
@@ -39,18 +37,14 @@ namespace Sia12
             //Navigate to URL
             _driver.Navigate().GoToUrl("http://a.testaddressbook.com/");
             //Click the SignIn button
-            _driver.FindElement(By.XPath("//a[@data-test='sign-in']")).Click();
-            Thread.Sleep(2000);
-            var _loginPage = new LoginPage(_driver);
+            var menuLoggedOut = new LoggedOutMenuItemControlCommon(_driver);
+
+            var _loginPage = menuLoggedOut.NavigateToLoginPage();
 
             _loginPage.LoginInApp("test@test.test", "test");
 
-            Thread.Sleep(1000);
-            var homePage = new HomePage(_driver);
-
-            addressesPage = homePage.NavigateToAddressesOverview();
-
-
+            var menu = new LoggedInMenuItemControlCommon(_driver);
+            addressesPage = menu.NavigateToAddressesOverview();
         }
 
         [TestMethod]

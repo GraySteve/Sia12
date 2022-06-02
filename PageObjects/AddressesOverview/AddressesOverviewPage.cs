@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading;
 using OpenQA.Selenium;
 using Sia12.PageObjects.AddressesOverview.Address;
+using Sia12.Utils;
 
 namespace Sia12.PageObjects.AddressesOverview
 {
@@ -15,8 +16,9 @@ namespace Sia12.PageObjects.AddressesOverview
             driver = browser;
         }
 
+        private By CreateAddress => By.XPath("//a[@data-test='create']");
         private IWebElement BtnCreateAddress => 
-            driver.FindElement(By.XPath("//a[@data-test='create']"));
+            driver.FindElement(CreateAddress);
         private IList<IWebElement> LstAddresses => 
             driver.FindElements(By.CssSelector("tbody tr"));
 
@@ -30,20 +32,27 @@ namespace Sia12.PageObjects.AddressesOverview
 
         public AddEditAddressPage NavigateToAddAddress()
         {
+            driver.WaitForElement(CreateAddress);
+
             BtnCreateAddress.Click();
-            Thread.Sleep(1000);
+            
             return new AddEditAddressPage(driver);
         }
 
         public void DeleteAddress(string addressName)
         {
+            driver.WaitForElement(CreateAddress);
+
             BtnDelete(addressName).Click();
             driver.SwitchTo().Alert().Dismiss();
         }
 
         public AddEditAddressPage NavigateToEditAddress(string addressName)
         {
+            driver.WaitForElement(CreateAddress);
+
             BtnEdit(addressName).Click();
+ 
             return new AddEditAddressPage(driver);
         }
     }
