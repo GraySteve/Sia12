@@ -90,105 +90,8 @@ Clarification :)
 
 ### **Session 3: Let's refine/refactor our code**
 
-**Scope:** This session scope was to use locators strategy, MSTest methods to initialize/clean up our test data and to get rid of our duplicate code
+**Scope:** This session scope was to use MSTest methods to initialize/clean up our test data and to get rid of our duplicate code
 
-Locators attributes strategy: 
-
-ID – unique, safest, fastest locator option and should always be your first choice 
-	
-	//input[@id = "session_email"] - “session_password" 
-	 
-
-Name - it also has same speed as of like ID 
-	
-	//input[@name = "session[email]"] -  “session[password]” 
- 
-
-Class Name (simple / composed) - Fast, Consistent as it doesn’t change much 
-	
-	//div[@class = "row"]//a - (Sign up button) 
- 
-
-Link Text (a.href) 
-	
-	//a[contains (text(), 'Sign up')] 
- 
-
-CSS Selector - slower and more resource consuming option but it gives more flexibility 
-	
-	input[data-test='email'] 
-	
-	input[type='password'] 
-	
-	tagname[attribute='attributeValue'] 
- 
-
-Xpath - slowest and the most “expensive” 
-	
-Most flexible in order to build reliable web element locators 
-
-Very slow locator since in order to locate the element it needs to traverse the whole DOM of the page which is a time consuming operation 
-
-Absolute XPath (direct way, select the element from the root node) / 
-
-Relative XPath (anywhere at the webpage) // 
-	
-	//input[@value='Sign in'] 
-
-	//tagname[@attribute='attributeValue'] 
-	
-	(input, button, label) | (id, name, class name) 
-	
-	//input[starts-with(@type, 'email')] 
-	
-	//input[@type = "email" and @name = "email"] 
-	
-	//input[@type = "email" or @name = "email"] 
-
-Page Break
- 
-
-XPath methods (Add Address): 
-
-Following - all following elements of the current node  
-
-	//div[@id='clearance']//following::div 
-	
-	//div[@class='container']//following::div 
-
-Ancestor - all ancestors element (grandparent, parent, etc.) on the current node 
-	
-	//input[@type="email"]/ancestor::form 
-	//input[@type="submit"]/ancestor::form 
-
-Child - all children elements of the current node
-
-	//div[@id='clearance']//child::div 
-
-Preceding - all nodes that come before the current node 
-
-	//input[@value='Sign in']//preceding::input 
-	
-
-Following-sibling - following siblings of the context node 
-
-	//div[@id='clearance']//following-sibling::input 
-
-Parent - parent of the current node 
-
-	//input[@type='submit']/parent::div 
-
-Descendant - descendants of the current node 
-
-	//div[@id='clearance']//descendant::div
-	
-	//element.name[@attribute.name=“attribute.value“]/method::element.name 
-
-	(following-sibling) 
-
-Try to use these element’s in order if possible in order to consistently have good tests which will reduce brittleness and increase maintainability.. 
-
-XPath and CSS Selectors are extremely powerful but are normally not the best option to use for both speed and brittleness reasons. 
 
 One of a test case component is the prerequisite: conditions that must be met before the test case can be run.
 Our code test login scenarios and we need to see what are the prerequisites.
@@ -575,62 +478,17 @@ For this test, will be the success message shown in the address details page, af
             driver = browser;
         }
 
-        public IWebElement LblSuccess => driver.FindElement(By.CssSelector("[data-test='notice']"));
+        public IWebElement LblNotice => driver.FindElement(By.CssSelector("[data-test='notice']"));
     }
 ```
 
-At this point, our automated tests will look like this:
-
-```csharp
-    [TestClass]
-    public class AddAddressTests
-    {
-        private IWebDriver driver;
-        private AddAdressPage addAddressPage;
-
-        [TestInitialize]
-        public void Setup()
-        {
-            driver = new ChromeDriver();
-            var loginPage = new LoginPage(driver);
-            driver.Manage().Window.Maximize();
-            driver.Navigate().GoToUrl("http://a.testaddressbook.com/");
-            loginPage.NavigateToLoginPage();
-            Thread.Sleep(1000);
-            loginPage.LoginApplication("test@test.test", "test");
-
-            var homePage = new HomePage(driver);
-            Thread.Sleep(1000);
-            var addressesPage = homePage.NavigateToAddressesPage();
-            Thread.Sleep(1000);
-            addAddressPage = addressesPage.NavigateToAddAddressPage();
-            Thread.Sleep(1000);
-        }
-
-        [TestMethod]
-        public void Go_To_AddAddressPage()
-        {
-            addAddressPage.AddAddress();
-            var addressDetails = new AddressDetailsPage(driver);
-            var message = "Address was successfully created.";
-            Assert.AreEqual(message, addressDetails.LblSuccess.Text);
-        }
-
-
-        [TestCleanup]
-        public void CleanUp()
-        {
-            driver.Quit();
-        }
-    }
-```
 
 
 Another thing we need to change is the way we navigate from adding address page to address details page. For this, since after saving the address, we navigate to the AddressDetails page,
 we need to change the CreateAddress method to return AddressDetails class:
 
 ```csharp
-        public AddresssDetailsPage CreateAddress(AddAddressBO addAddressB)
+        public AddresssDetailsPage CreateAddress(AddAddressBO inputData)
         {
             TxtFirstName.SendKeys("test");
             TxtLastName.SendKeys("test");
@@ -674,60 +532,6 @@ Then, use it in the AddAddress method as a parameter and to access his propertie
         }
 ```
 
-Now, we can move on to the **Wait Strategy** and how to use it.
-
-There are explicit and implicit waits in Selenium Web Driver. Waiting is having the automated task execution elapse a certain amount of time before continuing with the next step. 
-
-You should choose to use Explicit or Implicit Waits.
-
-**•	Thread.Sleep**
-
-In particular, this pattern of sleep is an example of explicit waits. So this isn’t actually a feature of Selenium WebDriver, it’s a common feature in most programming languages though.
-
-Thread.Sleep() does exactly what you think it does, it sleeps the thread.
-
-Example:
-
-```csharp
-            Thread.Sleep(2000);
-```
-
-Warning! Using Thread.Sleep() can leave to random failures (server is sometimes slow), you don't have full control of the test and the test could take longer than it should. It is a good practice to use other types of waits.
-
-**•	Implicit Wait**
-
-WebDriver will poll the DOM for a certain amount of time when trying to find an element or elements if they are not immediately available
-
-Example:
-
-```csharp
-            driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(1);
-```
-
-**•	Explicit Wait** - Wait for a certain condition to occur before proceeding further in the code
-
-In practice, we recommend that you use Web Driver Wait in combination with methods of the Expected Conditions class that reduce the wait. If the element appeared earlier than the time specified during Web Driver wait initialization, Selenium will not wait but will continue the test execution.
-
-Example 1:
-
-```csharp
-            var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(2));
-            wait.Until(ExpectedConditions.ElementIsVisible(firstName));
-```
-
-Example 2:
-
-```csharp
-        public AddAdressPage(IWebDriver browser)
-        {
-            driver = browser;
-            var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(2));
-            wait.Until(ExpectedConditions.ElementIsVisible(firstName));
-        }
-
-        private By firstName = By.Id("address_first_name");
-        private IWebElement TxtFirstName => driver.FindElement(firstName);
-```		
 
 		
 ### **Session 6**
@@ -747,108 +551,126 @@ Selenium Webdriver gives us the posibility to chain elements and create a struct
 
 We need to iterate the list to identify the address that we have added and to delete it. There are multiple ways to do it, but the preferred one is documented below: 
 ```csharp
-		private By addresses = By.CssSelector("tbody tr");
-        private IList<IWebElement> LstAddresses => driver.FindElements(addresses);
-		
-		private  By delete = By.CssSelector("[data-method='delete']");
-        private IWebElement BtnDeleteV2 => LstAddresses.FirstOrDefault(element => element.Text.Contains("**hotel name**"))?
-                                                        .FindElement(delete);
-														
-		public void DeleteAddress()
+		private IList<IWebElement> LstAddresses =>
+            _driver.FindElements(By.CssSelector("tbody tr"));
+
+        private IWebElement BtnEdit(string addressName) =>
+            LstAddresses.FirstOrDefault(element => element.Text.Contains(addressName))
+                .FindElement(By.CssSelector("a[data-test*=edit]"));
+
+        private IWebElement BtnDelete(string addressName) =>
+            LstAddresses.FirstOrDefault(element => element.Text.Contains(addressName))
+                .FindElement(By.CssSelector("a[data-method=delete]"));
+
+        private By NewAddress = By.CssSelector("a[data-test=create]");
+        private IWebElement BtnNewAddress => 
+            _driver.FindElement(NewAddress);
+
+        public AddAddressPage NavigateToAddAddressPage()
         {
-            BtnDeleteV2.Click();
-            driver.SwitchTo().Alert().Accept();
+            _driver.WaitForElement(NewAddress);
+            BtnNewAddress.Click();
+            return new AddAddressPage(_driver);
         }
-```
 
-The other ones would be:
-```csharp
-		private  By delete = By.CssSelector("[data-method='delete']");
-		//**not a good idea because it would always take the first from the list
-        private IWebElement BtnDelete => LstAddresses[0].FindElement(delete);
-
-
-		public void DeleteAddressV1()
+        public AddAddressPage NavigateToEditAddressPage(string addressName)
         {
-            BtnDelete.Click();
-            driver.SwitchTo().Alert().Accept();
+            _driver.WaitForElement(NewAddress);
+            BtnEdit(addressName).Click();
+            return new AddAddressPage(_driver);
         }
-		
-        public void DeleteAddressV2(AddAddressBO addAddressBo)
+
+        public void DeleteAddress(string addressName)
         {
-            foreach (var address in LstAddresses)
-            {
-                if (address.Text.Contains(addAddressBo.TxtFirstName))
-                {
-                    address.FindElement(delete).Click();
-                    driver.SwitchTo().Alert().Accept();
-                    break;
-                }
-            }
-        }    
+            _driver.WaitForElement(NewAddress);
+            BtnDelete(addressName).Click();
+            _driver.SwitchTo().Alert().Dismiss();
+        }
 ```
 
 
 And the methods could be called in test classes:
 ```csharp
 
-		[TestClass]
-	    public class AddressesTest
-	    {
-	        private IWebDriver driver;
-	        private AddressesPage addressesPage;
-	
-	        [TestInitialize]
-	        public void SetUp()
-	        {
-	            driver = new ChromeDriver();
-	            
-	            driver.Manage().Window.Maximize();
-	            driver.Navigate().GoToUrl("http://a.testaddressbook.com/");
-	            var loginPage = new LoginPage(driver);
-	            loginPage.menuItemControl.NavigateToLoginPage();
-	            loginPage.LoginApplication("test@test.test", "test");
-	
-	            var homePage = new HomePage(driver);
-	            //Implicit Wait
-	            //driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(1);
-	
-	            addressesPage = homePage.NavigateToAddressesPage();
-	            var addAddressPage = addressesPage.NavigateToAddAddressPage();
-	            addAddressPage.AddAddress(new AddAddressBO());
-	            var addressDetails =  addAddressPage.NavigateToAddressDetailsPage();
-	            addressesPage = addressDetails.NavigateToAddressesPage();
-	        }
-	
-	        [TestMethod]
-	        public void Should_Delete_Address_V1()
-	        {
-	            addressesPage.DeleteAddress1();
-	            string notice = "Address was successfully destroyed.";
-	            Assert.AreEqual(notice, addressesPage.NoticeText);
-	        }
-	
-	        [TestMethod]
-	        public void Should_Delete_Address_V2()
-	        {
-	            addressesPage.DeleteAddressV2(new AddAddressBO());
-	            string notice = "Address was successfully destroyed.";
-	            Assert.AreEqual(notice, addressesPage.NoticeText);
-	        }
-	
-	        [TestMethod]
-	        public void Should_Delete_Address_V3()
-	        {
-	            addressesPage.DeleteAddressV3();
-	            string notice = "Address was successfully destroyed.";
-	            Assert.AreEqual(notice, addressesPage.NoticeText);
-	        }
-	
-	        [TestCleanup]
-	        public void CleanUp()
-	        {
-	            driver.Quit();
-	        }
+    [TestClass]
+    public class AddAddressTests
+    {
+        private IWebDriver _driver;
+        private AddAddressPage addAddressPage;
+        private AddressesPage addressesPage;
+
+        [TestInitialize]
+        public void TestInitialize()
+        {
+            _driver = new ChromeDriver();
+            //maximize the page
+            _driver.Manage().Window.Maximize();
+            //open the application url
+            _driver.Navigate().GoToUrl("http://a.testaddressbook.com/");
+            ////click sign in button from the menu
+            //_driver.FindElement(By.Id("sign-in")).Click();
+            var loggedOutMenuItem = new MenuItemControlLoggedOut(_driver);
+            var loginPage = loggedOutMenuItem.NavigateToLoginPage();
+            //fill email
+            var homePage = loginPage.LoginApplication("test@test.test", "test");
+            addressesPage = homePage.menuItemControl.NavigateToAddressesPage();
+        }
+
+        [TestMethod]
+        public void ShouldAddAddressSuccessfully()
+        {
+            var inputData = new AddAddressPageBO()
+            {
+                //FirstName = "SIA13 FN",
+                LastName = "SIA13 LN",
+                Address1 = "SIA13 address1",
+                City = "SIA13 city",
+                State = "California",
+                ZipCode = "SIA13 zipcode",
+                Country = "Canada",
+                Color = "#FF0000"
+            };
+            addAddressPage = addressesPage.NavigateToAddAddressPage();
+            var addressDetailsPage = addAddressPage.AddAddress(inputData);
+            Assert.AreEqual("Address was successfully created.", addressDetailsPage.NoticeText);
+        }
+
+        [TestMethod]
+        public void ShouldEditAddressSuccessfully()
+        {
+            var inputData = new AddAddressPageBO()
+            {
+                FirstName = "Pretty please don't edit/delete",
+                LastName = "SIA13 edit",
+                Address1 = "SIA13 edit",
+                City = "SIA13 edit",
+                State = "California",
+                ZipCode = "SIA13 zipcode edit",
+                Country = "Canada",
+                Color = "#FF0000"
+            };
+            addAddressPage = addressesPage.NavigateToEditAddressPage(inputData.FirstName);
+
+            var addressDetailsPage = addAddressPage.AddAddress(inputData);
+            Assert.AreEqual("Address was successfully updated.", addressDetailsPage.NoticeText);
+        }
+
+        [TestMethod]
+        public void ShouldDismissAlert()
+        {
+            var inputData = new AddAddressPageBO()
+            {
+                FirstName = "Pretty please don't edit/delete"
+            };
+            addressesPage.DeleteAddress(inputData.FirstName);
+        }
+
+        [TestCleanup]
+        public void TestCleanup()
+        {
+            _driver.Quit();
+        }
+    }
 			
 ```
 
@@ -860,7 +682,7 @@ The first step is to create a class named MenuItemControl. This class will conta
 ```csharp
 
 		public class MenuItemControl
-	    {
+	        {
 	        public IWebDriver driver;
 			
 			public MenuItemControl(IWebDriver browser)
@@ -897,60 +719,67 @@ And we need to move the elements to the according classes. We also need to move 
 
 ```csharp
 
-		public class MenuItemControl
+	    public class MenuItemControlCommon
 	    {
-	        public IWebDriver driver;
-	
-	        public MenuItemControl(IWebDriver browser)
-	        {
-	            driver = browser;
-	        }
-	
-	        private By home = By.CssSelector("");
-	        private IWebElement BtnHome => driver.FindElement(home);
+		public IWebDriver _driver;
+
+		public MenuItemControlCommon(IWebDriver driver)
+		{
+		    _driver = driver;
+		}
+
+		public IWebElement BtnHome => _driver.FindElement(By.CssSelector(""));
 	    }
 		
 ```
 
 ```csharp
 
-		public class LoggedOutMenuItemControl: MenuItemControl
+	    public class MenuItemControlLoggedOut: MenuItemControlCommon
 	    {
-	
-	        private By signIn = By.Id("sign-in");
-	        private IWebElement BtnSignIn => driver.FindElement(signIn);
-	
-	        public LoggedOutMenuItemControl(IWebDriver browser) : base(browser)
-	        {
-	        }
-	
-	        public LoginPage NavigateToLoginPage()
-	        {
-	            BtnSignIn.Click();
-	            return new LoginPage(driver);
-	        }
+		public MenuItemControlLoggedOut(IWebDriver driver) : base(driver)
+		{
+		}
+
+		private By SignIn = By.Id("sign-in");
+		private IWebElement BtnSignIn =>
+		    _driver.FindElement(SignIn);
+
+		public LoginPage.LoginPage NavigateToLoginPage()
+		{
+		    _driver.WaitForElement(SignIn);
+		    BtnSignIn.Click();
+		    return new LoginPage.LoginPage(_driver);
+		}
 	    }
 		
 ```
 
 ```csharp
 
-		public class LoggedInMenuItemControl: MenuItemControl
+	    public class MenuItemControlLoggedIn: MenuItemControlCommon
 	    {
-	        private By addresses = By.CssSelector("");
-	        private IWebElement BtnAddresses => driver.FindElement(addresses);
-	
-	        private By signOut = By.CssSelector("");
-	        private IWebElement BtnSignOut => driver.FindElement(signOut);
-	
-	        private By useremail = By.CssSelector("span[data-test='current-user']");
-	        private IWebElement LblUserEmail=>driver.FindElement(useremail);
-	
-	        public LoggedInMenuItemControl(IWebDriver browser) : base(browser)
-	        {
-	        }
-	
-	        public string UserEmailText => LblUserEmail.Text;
+		public MenuItemControlLoggedIn(IWebDriver driver) : base(driver)
+		{
+		}
+
+		private IWebElement BtnSignOut =>
+		    _driver.FindElement(By.Id("sign-out"));
+
+		private IWebElement BtnAddresses =>
+		    _driver.FindElement(By.CssSelector("a[data-test=addresses]"));
+
+		private IWebElement LblUserEmail =>
+		    _driver.FindElement(By.CssSelector("span[data-test=current-user]"));
+
+
+		public AddressesPage.AddressesPage NavigateToAddressesPage()
+		{
+		    BtnAddresses.Click();
+		    return new AddressesPage.AddressesPage(_driver);
+		}
+
+		public string UserEmail => LblUserEmail.Text;
 	    }
 		
 ```
@@ -1002,61 +831,174 @@ Let's used in the LoginPage.cs and LoginTests.cs
 ```csharp
 
 		[TestClass]
-	    public class LoginTests
-	    {
-	        private IWebDriver driver;
-	        private LoginPage loginPage;
-	
-	
-	        [TestInitialize]
-	        public void SetUp()
-	        {
-	            driver = new ChromeDriver();
-	            loginPage = new LoginPage(driver);
-	            driver.Manage().Window.Maximize();
-	            driver.Navigate().GoToUrl("http://a.testaddressbook.com/");
-				//**use in the test**
-	            loginPage.menuItemControl.NavigateToLoginPage();
-	        }
-	
-	        [TestMethod]
-	        public void Login_CorrectEmail_CorrectPassword()
-	        {
-	            loginPage.LoginApplication("test@test.test", "test");
-	
-	            var expectedResult = "test@test.test";
-	            var homePage = new HomePage(driver);
-	
-	            Assert.AreEqual(expectedResult, homePage.menuItemControl.UserEmailText);
-	        }
-	
-	        [TestMethod]
-	        public void Login_IncorrectEmail_IncorrectPassword()
-	        {
-	            loginPage.LoginApplication("weor@hdsh.asdhg", "asd");
-	
-	            var expectedResult = "Bad email or password.";
-	            var actualResults = driver.FindElement(By.XPath("//div[starts-with(@class, 'alert')]")).Text;
-	
-	            Assert.AreEqual(expectedResult, actualResults);
-	        }
-	
-	        [TestCleanup]
-	        public void CleanUp()
-	        {
-	            driver.Quit();
-	        }
-	    }
+    public class LoginTests
+    {
+
+        private IWebDriver driver;
+        private LoginPage loginPage;
+
+        [TestInitialize]
+        public void TestSetup()
+        {
+            driver = new ChromeDriver();
+            //maximize the page
+            driver.Manage().Window.Maximize();
+            //open the application url
+            driver.Navigate().GoToUrl("http://a.testaddressbook.com/");
+            //click sign in button from the menu
+            var menuItemControl = new MenuItemControlLoggedOut(driver);
+            menuItemControl.NavigateToLoginPage();
+            //fill email
+            loginPage = new LoginPage(driver);
+        }
+
+        [TestMethod]
+        public void UserShouldLoginSuccessfully()
+        {
+            loginPage.LoginApplication("test@test.test","test");
+            var menuItemControl = new MenuItemControlLoggedIn(driver);
+            var loggedInUserEmail = menuItemControl.UserEmail;
+            Assert.AreEqual("test@test.test", loggedInUserEmail);
+            Assert.IsTrue(loggedInUserEmail.Equals("test@test.test"));
+        }
+
+        [TestMethod]
+        public void UserShouldNotLoginWithInvalidEmail()
+        {
+            loginPage.LoginApplication("invalidEmal@test.test", "test");
+            //verify/assert that the user cannot login
+            var badEmailOrPassword = driver.FindElement(By.XPath("//div[@data-test='notice']"));
+            Assert.AreEqual("Bad email or password.", badEmailOrPassword.Text);
+            Assert.IsTrue(badEmailOrPassword.Text.Equals("Bad email or password."));
+        }
+
+        [TestMethod]
+        public void UserShouldNotLoginWithInvalidPassword()
+        {
+            loginPage.LoginApplication("test@test.test", "invalidPassword");
+            //verify/assert that the user cannot login
+            var badEmailOrPassword = driver.FindElement(By.XPath("//div[@data-test='notice']"));
+            Assert.AreEqual("Bad email or password.", badEmailOrPassword.Text);
+            Assert.IsTrue(badEmailOrPassword.Text.Equals("Bad email or password."));
+        }
+
+        [TestCleanup]
+        public void TestCleanup()
+        {
+            driver.Quit();
+        }
+
+    }
 		
 ```
+Now, we can move on to the **Wait Strategy** and how to use it.
 
+There are explicit and implicit waits in Selenium Web Driver. Waiting is having the automated task execution elapse a certain amount of time before continuing with the next step. 
+
+You should choose to use Explicit or Implicit Waits.
+
+**•	Thread.Sleep**
+
+In particular, this pattern of sleep is an example of explicit waits. So this isn’t actually a feature of Selenium WebDriver, it’s a common feature in most programming languages though.
+
+Thread.Sleep() does exactly what you think it does, it sleeps the thread.
+
+Example:
+
+```csharp
+            Thread.Sleep(2000);
+```
+
+Warning! Using Thread.Sleep() can leave to random failures (server is sometimes slow), you don't have full control of the test and the test could take longer than it should. It is a good practice to use other types of waits.
+
+**•	Implicit Wait**
+
+WebDriver will poll the DOM for a certain amount of time when trying to find an element or elements if they are not immediately available
+
+Example:
+
+```csharp
+            driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(1);
+```
+
+**•	Explicit Wait** - Wait for a certain condition to occur before proceeding further in the code
+
+In practice, we recommend that you use Web Driver Wait in combination with methods of the Expected Conditions class that reduce the wait. If the element appeared earlier than the time specified during Web Driver wait initialization, Selenium will not wait but will continue the test execution.
+
+In order to use the explicit wait, we need to create a new class in Helpers folder and create 2 methods for waiting the element to be displayed, enabled and not to be null.  
+  
+The first method will return the condition above:
+
+```csharp
+  private static bool IsAvailable(IWebElement element) =>
+            element != null && element.Displayed && element.Enabled; 
+```
+  
+The second method will wait for the element based on the previous condition. The method contains 3 params: a driver, a selector(By) and a duration that represents the max duration to wait for the element. 
+Every 30 milliseconds, the method will try to check the condition until the duration expires.
+  
+```csharp
+   public static void WaitForElement(this IWebDriver driver, By by, int duration = 10)
+        {
+            var wait = 
+                new WebDriverWait(driver, new TimeSpan(0, 0, duration))
+                {
+                    PollingInterval = TimeSpan.FromMilliseconds(30),
+                    Timeout = TimeSpan.FromSeconds(duration)
+                };
+            wait.IgnoreExceptionTypes(typeof(StaleElementReferenceException));
+            wait.IgnoreExceptionTypes(typeof(NoSuchElementException));
+
+            wait.Until(condition =>
+            {
+                try
+                {
+                    var element = driver.FindElement(by);
+                    if (IsAvailable(element))
+                    {
+                        return element;
+                    }
+
+                    return null;
+                }
+                catch (StaleElementReferenceException)
+                {
+                    return null;
+                }
+                catch (NoSuchElementException)
+                {
+                    return null;
+                }
+            });
+        }
+```
+
+Example 2:
+
+```csharp
+        public HomePage.HomePage LoginApplication(string email, string password)
+        {
+            driver.WaitForElement(Email);
+            TxtEmail.SendKeys(email);
+            TxtPassword.SendKeys(password);
+            BtnLogin.Click();
+            return new HomePage.HomePage(driver);
+        }
+```		
+
+  
+  
 As said before, this can be put in every class, depending on the context.
 
 
 ### **References**
+
 Getting started: 
 - https://www.automatetheplanet.com/getting-started-webdriver/ 
 - official documentation: https://www.selenium.dev/documentation/en/
+	
+Framework overall(Not up to date, but aplicable to a framework):
+- https://testautomationu.applitools.com/test-automation-framework-csharp/chapter12.html
 
 Page object model 
 - https://www.selenium.dev/documentation/en/guidelines_and_recommendations/page_object_models/ 
@@ -1066,11 +1008,9 @@ Page object model
 
 Waits: 
 - https://www.toolsqa.com/selenium-webdriver/c-sharp/advance-explicit-webdriver-waits-in-c/ 
-- https://www.lambdatest.com/blog/explicit-fluent-wait-in-selenium-c/ 
-- https://dzone.com/articles/selenium-c-tutorial-using-explicit-and-fluent-wait 
 - https://alexsiminiuc.medium.com/c-expected-conditions-are-deprecated-so-what-b451365adc24 
-- https://testautomationu.applitools.com/test-automation-framework-csharp/chapter12.html
 
 Others: 
 - Select dropdown - https://www.toolsqa.com/selenium-webdriver/c-sharp/dropdown-multiple-select-operations-in-c/ 
 - Javascript executor - https://www.c-sharpcorner.com/article/execution-of-selenium-web-driver-using-c-sharp-javascript/
+
